@@ -26,7 +26,8 @@ SensorFusion::SensorFusion(ros::NodeHandle nh, ros::NodeHandle private_nh):
 	pcl_sparse_semantic_(new VRGBPointCloud),
 	cloud_sub_(nh, "/kitti/velo/pointcloud", 2),
 	image_sub_(nh,	"/kitti/camera_color_left/image_raw", 2),
-	sync_(MySyncPolicy(10), cloud_sub_, image_sub_){
+	segmentaion_image_sub_(nh,	"/semantic_segmentation/image", 2),
+	sync_(MySyncPolicy(10), cloud_sub_, image_sub_, segmentaion_image_sub_){
 
 	// Get data path
 	std::string home_dir;
@@ -164,7 +165,7 @@ SensorFusion::SensorFusion(ros::NodeHandle nh, ros::NodeHandle private_nh):
 		"/sensor/image/detection_grid", 2);
 
 	// Define Subscriber
-	sync_.registerCallback(boost::bind(&SensorFusion::process, this, _1, _2));
+	sync_.registerCallback(boost::bind(&SensorFusion::process, this, _1, _2, _3));
 
 	// Init counter for publishing
 	time_frame_ = 0;
@@ -176,14 +177,17 @@ SensorFusion::~SensorFusion(){
 
 void SensorFusion::process(
 		const PointCloud2::ConstPtr & cloud,
-		const Image::ConstPtr & image
+		const Image::ConstPtr & image,
+		const Image::ConstPtr & seg_image
 	){
+	
+	ROS_INFO("process");
 
 	// Preprocess point cloud
 	processPointCloud(cloud);
 
 	// Preprocess image
-	processImage(image);
+	processImage(seg_image);
 
 	// Fuse sensors by mapping elevated point cloud into semantic segmentated
 	// image
@@ -544,43 +548,54 @@ void SensorFusion::processImage(const Image::ConstPtr & image){
  * 1. Load precalculated semantic segmentated images to ensure online
  * performance
  */
+	// cv::Mat sem_image_2;
+	// // Define path
+	// std::ostringstream path_name;
 
-	// Define path
-	std::ostringstream path_name;
+	// // HARDCODE HOME DIRECTORY HERE
+	// path_name << params_.home_dir << "/"
+	// 	<< params_.scenario 
+	// 	<< "/segmented_semantic_images/"
+	// 	<< std::setfill('0') << std::setw(10)	<< time_frame_ << ".png";
 
-	// HARDCODE HOME DIRECTORY HERE
-	path_name << params_.home_dir << "/"
-		<< params_.scenario 
-		<< "/segmented_semantic_images/"
-		<< std::setfill('0') << std::setw(10)	<< time_frame_ << ".png";
+	// // Load semantic segmentated image
+	// sem_image_2 = cv::imread(path_name.str(), CV_LOAD_IMAGE_COLOR);
 
-	// Load semantic segmentated image
-	sem_image_ = cv::imread(path_name.str(), CV_LOAD_IMAGE_COLOR);
+	// // Sanity check if image is loaded correctly
+	// if(sem_image_2.cols == 0 || sem_image_2.rows == 0){
+	// 	ROS_WARN("Hardcode path in sensor_fusion.cpp processImage()!");
+	// 	return;
+	// }
 
-	// Sanity check if image is loaded correctly
-	if(sem_image_.cols == 0 || sem_image_.rows == 0){
-		ROS_WARN("Hardcode path in sensor_fusion.cpp processImage()!");
-		return;
-	}
+	// // Canny edge detection
+	// /*
+	// cv::Mat sem_edge_img, sem_dil_img, sem_output;
+	// if(params_.sem_ed){
+	// 	cv::Canny(sem_image_, sem_edge_img, params_.sem_ed_min,
+	// 		params_.sem_ed_max, params_.sem_ed_kernel);
+	// 	cv::dilate(sem_edge_img, sem_dil_img, cv::Mat(), 
+	// 		cv::Point(-1, -1), 1, 1, 1);
+	// 	sem_image_.copyTo(sem_output, sem_dil_img);
+	// }
+	// */
+	// // Publish
+	// cv_bridge::CvImage cv_semantic_image;
+	// cv_semantic_image.image = sem_image_2;
+	// cv_semantic_image.encoding = "bgr8";
+	// cv_semantic_image.header.stamp = image->header.stamp;
+	// image_semantic_pub_.publish(cv_semantic_image.toImageMsg());
 
-	// Canny edge detection
-	/*
-	cv::Mat sem_edge_img, sem_dil_img, sem_output;
-	if(params_.sem_ed){
-		cv::Canny(sem_image_, sem_edge_img, params_.sem_ed_min,
-			params_.sem_ed_max, params_.sem_ed_kernel);
-		cv::dilate(sem_edge_img, sem_dil_img, cv::Mat(), 
-			cv::Point(-1, -1), 1, 1, 1);
-		sem_image_.copyTo(sem_output, sem_dil_img);
-	}
-	*/
-
-	// Publish
-	cv_bridge::CvImage cv_semantic_image;
-	cv_semantic_image.image = sem_image_;
-	cv_semantic_image.encoding = "bgr8";
-	cv_semantic_image.header.stamp = image->header.stamp;
-	image_semantic_pub_.publish(cv_semantic_image.toImageMsg());
+	cv_bridge::CvImagePtr cv_ptr;
+	try
+    {
+      cv_ptr = cv_bridge::toCvCopy(image, sensor_msgs::image_encodings::BGR8);
+    }
+    catch (cv_bridge::Exception& e)
+    {
+      ROS_ERROR("cv_bridge exception: %s", e.what());
+      return;
+    }
+	sem_image_ = cv_ptr->image;
 }
 
 void SensorFusion::mapPointCloudIntoImage(const VPointCloud::Ptr cloud,
@@ -606,6 +621,9 @@ void SensorFusion::mapPointCloudIntoImage(const VPointCloud::Ptr cloud,
 	// Get image format
 	int img_width = sem_image_.cols;
 	int img_height = sem_image_.rows;
+
+	ROS_INFO ("my seg img_width [%d]", img_width);
+	ROS_INFO ("my seg img_height [%d]", img_height);
 
 	// Clear semantic cloud
 	pcl_semantic_->points.clear();

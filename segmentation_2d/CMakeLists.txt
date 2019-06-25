@@ -1,25 +1,22 @@
 cmake_minimum_required(VERSION 2.8.3)
-project(tracking)
+project(segmentation_2d)
 
 ## Compile as C++11, supported in ROS Kinetic and newer
-add_compile_options(-std=c++11)
+# add_compile_options(-std=c++11)
 
 ## Find catkin macros and libraries
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
 ## is used, also find other catkin packages
 find_package(catkin REQUIRED COMPONENTS
   roscpp
+  rospy
+  sensor_msgs
   std_msgs
-  cv_bridge
-  pcl_ros
-  helper
 )
-
-find_package( OpenCV REQUIRED )
-include_directories( ${OpenCV_INCLUDE_DIRS} )
 
 ## System dependencies are found with CMake's conventions
 # find_package(Boost REQUIRED COMPONENTS system)
+
 
 ## Uncomment this if the package has a setup.py. This macro ensures
 ## modules and global scripts declared therein get installed
@@ -74,7 +71,7 @@ include_directories( ${OpenCV_INCLUDE_DIRS} )
 ## Generate added messages and services with any dependencies listed here
 # generate_messages(
 #   DEPENDENCIES
-#   std_msgs
+#   sensor_msgs#   std_msgs
 # )
 
 ################################################
@@ -107,9 +104,9 @@ include_directories( ${OpenCV_INCLUDE_DIRS} )
 ## CATKIN_DEPENDS: catkin_packages dependent projects also need
 ## DEPENDS: system dependencies of this project that dependent projects also need
 catkin_package(
-  INCLUDE_DIRS include
-#  LIBRARIES tracking
-  CATKIN_DEPENDS roscpp std_msgs helper
+#  INCLUDE_DIRS include
+#  LIBRARIES segmentation_2d
+#  CATKIN_DEPENDS roscpp rospy sensor_msgs std_msgs
 #  DEPENDS system_lib
 )
 
@@ -120,22 +117,14 @@ catkin_package(
 ## Specify additional locations of header files
 ## Your package locations should be listed before other locations
 include_directories(
-  include
+# include
   ${catkin_INCLUDE_DIRS}
-  ${helper_INCLUDE_DIRS}
 )
 
 ## Declare a C++ library
-add_library(
-  ${PROJECT_NAME}_lib
-  src/${PROJECT_NAME}_lib/ukf.cpp
-)
-
-## Specify libraries to link a library or executable target against
-target_link_libraries(
-  ${PROJECT_NAME}_lib
-  ${catkin_LIBRARIES}
-)
+# add_library(${PROJECT_NAME}
+#   src/${PROJECT_NAME}/segmentation_2d.cpp
+# )
 
 ## Add cmake target dependencies of the library
 ## as an example, code may need to be generated before libraries
@@ -145,14 +134,7 @@ target_link_libraries(
 ## Declare a C++ executable
 ## With catkin_make all packages are built within a single CMake context
 ## The recommended prefix ensures that target names across packages don't collide
-
-# tracking nodelet
-add_library( tracking_nodelet src/tracking_nodelet.cpp )
-target_link_libraries( tracking_nodelet ${PROJECT_NAME}_lib)
-
-# tracking node
-add_executable(tracking src/tracking_node.cpp)
-target_link_libraries( tracking ${PROJECT_NAME}_lib)
+# add_executable(${PROJECT_NAME}_node src/segmentation_2d_node.cpp)
 
 ## Rename C++ executable without prefix
 ## The above recommended prefix causes long target names, the following renames the
@@ -163,6 +145,11 @@ target_link_libraries( tracking ${PROJECT_NAME}_lib)
 ## Add cmake target dependencies of the executable
 ## same as for the library above
 # add_dependencies(${PROJECT_NAME}_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+
+## Specify libraries to link a library or executable target against
+# target_link_libraries(${PROJECT_NAME}_node
+#   ${catkin_LIBRARIES}
+# )
 
 #############
 ## Install ##
@@ -193,19 +180,18 @@ target_link_libraries( tracking ${PROJECT_NAME}_lib)
 # )
 
 ## Mark other files for installation (e.g. launch and bag files, etc.)
-install(FILES
-	nodelets.xml
+# install(FILES
 #   # myfile1
 #   # myfile2
-    DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}
-)
+#   DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}
+# )
 
 #############
 ## Testing ##
 #############
 
 ## Add gtest based cpp test target and link libraries
-# catkin_add_gtest(${PROJECT_NAME}-test test/test_perception.cpp)
+# catkin_add_gtest(${PROJECT_NAME}-test test/test_segmentation_2d.cpp)
 # if(TARGET ${PROJECT_NAME}-test)
 #   target_link_libraries(${PROJECT_NAME}-test ${PROJECT_NAME})
 # endif()

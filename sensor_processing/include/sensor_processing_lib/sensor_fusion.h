@@ -102,7 +102,8 @@ public:
 	// and publishes the output grid message
 	virtual void process(
 		const PointCloud2::ConstPtr & cloud,
-		const Image::ConstPtr & image
+		const Image::ConstPtr & image,
+		const Image::ConstPtr & seg_image
 	);
 
 
@@ -153,7 +154,8 @@ private:
 	// Subscriber
 	Subscriber<PointCloud2> cloud_sub_;
 	Subscriber<Image> image_sub_;
-	typedef sync_policies::ExactTime<PointCloud2, Image> MySyncPolicy;
+	Subscriber<Image> segmentaion_image_sub_;
+	typedef sync_policies::ExactTime<PointCloud2, Image, Image> MySyncPolicy;
 	Synchronizer<MySyncPolicy> sync_;
 
 	// Class functions

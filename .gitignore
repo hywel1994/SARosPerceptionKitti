@@ -1,0 +1,12 @@
+*~
+*.out
+*.pyc
+*.[oa]
+cmake-build-debug/*
+/CMakeLists.txt
+.idea/
+.vscode/
+nohup.out
+*.DS_Store
+*.pth
+detection_2d/models

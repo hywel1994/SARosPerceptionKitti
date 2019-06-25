@@ -1,0 +1,20 @@
+<launch>
+
+  <!-- Assign home directory -->
+  <arg name="home_dir"/>
+
+  <!-- Choose scenario-->
+  <arg name="scenario" default="0060"/>
+
+  <!-- Choose replay speed -->
+  <arg name="speed" default="0.2"/>
+
+  <!-- Choose replay delay -->
+  <arg name="delay" default="3" />
+
+  <!-- Play rosbag file -->
+  <node pkg="rosbag" type="play" name="player" args="-r $(arg speed) -d $(arg delay) $(arg home_dir)/kitti_data/$(arg scenario)/synchronized_data.bag"/>
+
+  <node pkg="segmentation_2d" type="segmentation_ros.py" name="segmentation_ros" />
+
+</launch>
