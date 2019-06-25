@@ -9,4 +9,4 @@ cmake-build-debug/*
 nohup.out
 *.DS_Store
 *.pth
-detection_2d/models
+detection_tf/models
